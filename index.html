@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialSphere Pro - Full Ecosystem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --accent: #4f46e5; }
+        body { background-color: #f3f2ef; transition: background-color 0.3s; overflow-x: hidden; }
+        body.dark { background-color: #0f172a; color: #f1f5f9; }
+        body.dark .bg-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
+        body.dark .text-slate-900 { color: #f8fafc; }
+        body.dark .text-slate-500 { color: #94a3b8; }
+        body.dark .bg-slate-100 { background-color: #334155; }
+        body.dark .border-slate-200 { border-color: #334155; }
+        body.dark .bg-slate-50 { background-color: #0f172a; }
+
+        .active-tab { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        .post-card { transition: transform 0.2s; }
+        .toast-msg { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateY(100%) translateX(-50%); opacity: 0; } to { transform: translateY(0) translateX(-50%); opacity: 1; } }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="selection:bg-indigo-100 selection:text-indigo-900 pb-12 md:pb-0">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex flex-col items-center gap-2"></div>
+
+    <!-- HEADER NAVIGATION -->
+    <nav class="fixed top-0 w-full bg-white border-b border-slate-200 z-50 h-16 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div onclick="switchTab('home')" class="cursor-pointer flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-xl text-white font-bold text-xl shadow-indigo-200 shadow-lg">S</div>
+                <div class="relative hidden sm:block">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                    <input id="searchInput" oninput="filterPosts()" type="text" placeholder="Search..." class="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm w-48 lg:w-80 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1 md:gap-4 h-full">
+                <div onclick="switchTab('home')" id="tab-home" class="nav-item flex flex-col items-center justify-center w-14 md:w-16 h-full cursor-pointer active-tab">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span class="hidden md:block text-[10px] mt-1 font-semibold">Home</span>
+                </div>
+                <div onclick="switchTab('network')" id="tab-network" class="nav-item flex flex-col items-center justify-center w-14 md:w-16 h-full cursor-pointer text-slate-500 hover:text-indigo-600">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="hidden md:block text-[10px] mt-1 font-semibold">Network</span>
+                </div>
+                <div onclick="switchTab('jobs')" id="tab-jobs" class="nav-item flex flex-col items-center justify-center w-14 md:w-16 h-full cursor-pointer text-slate-500 hover:text-indigo-600">
+                    <i data-lucide="briefcase" class="w-5 h-5"></i>
+                    <span class="hidden md:block text-[10px] mt-1 font-semibold">Jobs</span>
+                </div>
+                <div onclick="switchTab('notifications')" id="tab-notifications" class="nav-item relative flex flex-col items-center justify-center w-14 md:w-16 h-full cursor-pointer text-slate-500 hover:text-indigo-600">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span id="notif-dot" class="absolute top-3 right-4 md:right-5 w-2 h-2 bg-red-500 rounded-full border-2 border-white hidden"></span>
+                    <span class="hidden md:block text-[10px] mt-1 font-semibold">Alerts</span>
+                </div>
+                <div onclick="toggleDarkMode()" class="flex flex-col items-center justify-center w-14 md:w-16 h-full cursor-pointer text-slate-500 hover:text-indigo-600">
+                    <i data-lucide="moon" class="w-5 h-5"></i>
+                    <span class="hidden md:block text-[10px] mt-1 font-semibold">Theme</span>
+                </div>
+            </div>
+
+            <div class="flex items-center border-l pl-4 border-slate-200">
+                <img id="myAvatar" src="https://i.pravatar.cc/150?u=me" class="w-8 h-8 rounded-full border-2 border-indigo-100 cursor-pointer" onclick="toggleProfileEdit()">
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto pt-20 px-4 grid grid-cols-1 md:grid-cols-12 gap-6 pb-20">
+        
+        <!-- LEFT PANEL: PROFILE & STATS -->
+        <aside class="hidden md:block md:col-span-3">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm sticky top-20">
+                <div class="h-16 bg-gradient-to-br from-indigo-600 to-purple-700"></div>
+                <div class="px-4 pb-6 text-center">
+                    <img src="https://i.pravatar.cc/150?u=me" class="w-20 h-20 rounded-xl border-4 border-white shadow-md mx-auto -mt-10 mb-3 object-cover">
+                    <h2 id="profile-name" class="font-bold text-lg">Alex Johnson</h2>
+                    <p id="profile-headline" class="text-xs text-slate-500">Full Stack Developer & Tech Enthusiast</p>
+                    
+                    <button onclick="toggleProfileEdit()" class="mt-4 w-full py-1.5 text-xs font-bold border rounded-full hover:bg-slate-50 transition-colors">Edit Profile</button>
+
+                    <div class="mt-6 space-y-3 text-left border-t pt-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500">Post Views</span>
+                            <span class="font-bold text-indigo-600">1,429</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500">Connections</span>
+                            <span id="stat-connections" class="font-bold text-indigo-600">482</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500">Saved Items</span>
+                            <span id="stat-saved" class="font-bold text-indigo-600">12</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER PANEL: DYNAMIC CONTENT -->
+        <section class="md:col-span-9 lg:col-span-6 space-y-4">
+            
+            <!-- HOME VIEW -->
+            <div id="view-home">
+                <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4 shadow-sm">
+                    <div class="flex gap-3">
+                        <img src="https://i.pravatar.cc/150?u=me" class="w-12 h-12 rounded-full">
+                        <div class="flex-1">
+                            <textarea id="postInput" class="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white resize-none border border-transparent focus:border-indigo-500 transition-all" placeholder="What's happening?" rows="1"></textarea>
+                            <div id="postPreview" class="hidden mt-2 relative">
+                                <img id="attachedImg" src="" class="w-full h-48 object-cover rounded-lg">
+                                <button onclick="removeImage()" class="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                            <div id="postActions" class="hidden justify-between items-center mt-3 animate-in fade-in slide-in-from-top-2">
+                                <div class="flex gap-2">
+                                    <button onclick="attachRandomImage()" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><i data-lucide="image" class="w-5 h-5"></i></button>
+                                    <button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"><i data-lucide="calendar" class="w-5 h-5"></i></button>
+                                </div>
+                                <button id="btnPost" onclick="publishPost()" class="bg-indigo-600 text-white px-6 py-1.5 rounded-full text-sm font-bold shadow-md shadow-indigo-100 hover:bg-indigo-700 transition-all">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="feed" class="space-y-4"></div>
+            </div>
+
+            <!-- NETWORK VIEW -->
+            <div id="view-network" class="hidden space-y-4">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Manage Network</h2>
+                        <span class="text-xs text-indigo-600 font-bold cursor-pointer">See all</span>
+                    </div>
+                    <div id="network-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- JOBS VIEW -->
+            <div id="view-jobs" class="hidden space-y-4">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <h2 class="text-xl font-bold mb-4">Recommended Jobs</h2>
+                    <div class="relative mb-6">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                        <input type="text" placeholder="Search job titles or companies..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                    <div id="jobs-list" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- NOTIFICATIONS VIEW -->
+            <div id="view-notifications" class="hidden space-y-2">
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b font-bold flex justify-between items-center">
+                        <span>Recent Activity</span>
+                        <button onclick="clearNotifications()" class="text-[10px] text-slate-400 hover:text-indigo-600">Clear all</button>
+                    </div>
+                    <div id="notif-list" class="divide-y"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT PANEL: TRENDS & CHAT -->
+        <aside class="hidden lg:block lg:col-span-3 space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <h3 class="font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-indigo-600"></i> Trending Now
+                </h3>
+                <div id="trends" class="space-y-4"></div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden sticky top-20">
+                <div class="p-3 border-b flex justify-between items-center bg-indigo-50/50">
+                    <span class="text-sm font-bold">Messaging</span>
+                    <i data-lucide="message-square" class="w-4 h-4 text-indigo-600"></i>
+                </div>
+                <div id="chat-list" class="divide-y max-h-60 overflow-y-auto"></div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- MODAL: PROFILE EDIT -->
+    <div id="modal-profile" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in duration-200">
+            <h2 class="text-xl font-bold mb-4">Edit Intro</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 block mb-1">Headline</label>
+                    <input id="edit-headline" type="text" class="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" value="Full Stack Developer & Tech Enthusiast">
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button onclick="toggleProfileEdit()" class="flex-1 py-2 text-sm font-bold bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">Cancel</button>
+                    <button onclick="saveProfile()" class="flex-1 py-2 text-sm font-bold bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA LAYER ---
+        const state = {
+            posts: [
+                { id: 1, author: "Elena Vance", avatar: "https://i.pravatar.cc/150?u=elena", content: "Just open-sourced my new React animation library! Check it out if you want smooth 60fps transitions with zero config. 🚀", image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&q=80", likes: 24, liked: false, comments: [], time: "2h ago", saved: false },
+                { id: 2, author: "Tech Daily", avatar: "https://i.pravatar.cc/150?u=tech", content: "AI is moving faster than ever. What's one tool you can't live without in 2024?", likes: 120, liked: true, comments: [{user: "Marcus", text: "Cursor AI is a game changer!"}], time: "5h ago", saved: true }
+            ],
+            notifications: [
+                { id: 1, user: "Elena Vance", action: "liked your post", time: "10m ago", read: false },
+                { id: 2, user: "James Gordon", action: "commented on your photo", time: "1h ago", read: true }
+            ],
+            network: [
+                { id: 201, name: "Sofia Rodriguez", title: "Product Designer at Figma", avatar: "https://i.pravatar.cc/150?u=sofia" },
+                { id: 202, name: "Marcus Wright", title: "Cloud Architect", avatar: "https://i.pravatar.cc/150?u=marcus" },
+                { id: 203, name: "Priya Das", title: "QA Engineer", avatar: "https://i.pravatar.cc/150?u=priya" }
+            ],
+            jobs: [
+                { id: 301, title: "Senior Frontend Engineer", company: "Stripe", location: "Remote", logo: "https://logo.clearbit.com/stripe.com", applied: false },
+                { id: 302, title: "Staff Product Designer", company: "Airbnb", location: "San Francisco", logo: "https://logo.clearbit.com/airbnb.com", applied: false }
+            ],
+            messages: [
+                { id: 401, user: "Elena Vance", text: "Hey! Did you check that library?", avatar: "https://i.pravatar.cc/150?u=elena" },
+                { id: 402, user: "David Kim", text: "The meeting is at 2 PM.", avatar: "https://i.pravatar.cc/150?u=david" }
+            ],
+            trends: ["#WebDev", "#AI", "#React", "#Tailwind", "#RemoteWork"],
+            currentUser: { name: "Alex Johnson", connections: 482, savedItems: 12 },
+            attachedImage: null
+        };
+
+        // --- CORE UI ENGINE ---
+
+        function renderAll() {
+            renderFeed();
+            renderNotifications();
+            renderNetwork();
+            renderJobs();
+            renderMessages();
+            renderTrends();
+            lucide.createIcons();
+        }
+
+        function renderFeed(filter = "") {
+            const feed = document.getElementById('feed');
+            const displayPosts = filter 
+                ? state.posts.filter(p => p.content.toLowerCase().includes(filter.toLowerCase()))
+                : state.posts;
+
+            feed.innerHTML = displayPosts.map(post => `
+                <div class="post-card bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 mb-4">
+                    <div class="p-4 flex justify-between">
+                        <div class="flex gap-3">
+                            <img src="${post.avatar}" class="w-10 h-10 rounded-full object-cover">
+                            <div>
+                                <h4 class="font-bold text-sm hover:text-indigo-600 cursor-pointer">${post.author}</h4>
+                                <p class="text-[10px] text-slate-400">${post.time} • 🌐</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleSave(${post.id})" class="${post.saved ? 'text-indigo-600' : 'text-slate-400'} hover:scale-110 transition-transform"><i data-lucide="bookmark" class="w-5 h-5 ${post.saved ? 'fill-current' : ''}"></i></button>
+                    </div>
+                    <div class="px-4 pb-3">
+                        <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">${post.content}</p>
+                    </div>
+                    ${post.image ? `<img src="${post.image}" class="w-full h-72 object-cover border-y border-slate-50">` : ''}
+                    
+                    <div class="px-4 py-2 border-b flex justify-between items-center">
+                        <span class="text-[10px] text-slate-400 font-medium">${post.likes} likes • ${post.comments.length} comments</span>
+                    </div>
+
+                    <div class="p-1 flex">
+                        <button onclick="handleLike(${post.id})" class="flex-1 flex items-center justify-center gap-2 py-3 hover:bg-slate-50 rounded-lg transition-colors ${post.liked ? 'text-indigo-600 font-bold' : 'text-slate-500'}">
+                            <i data-lucide="thumbs-up" class="w-5 h-5 ${post.liked ? 'fill-current' : ''}"></i>
+                            <span class="text-xs">Like</span>
+                        </button>
+                        <button onclick="toggleCommentSection(${post.id})" class="flex-1 flex items-center justify-center gap-2 py-3 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                            <span class="text-xs">Comment</span>
+                        </button>
+                        <button onclick="toast('Copied link to clipboard')" class="flex-1 flex items-center justify-center gap-2 py-3 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors">
+                            <i data-lucide="share-2" class="w-5 h-5"></i>
+                            <span class="text-xs">Share</span>
+                        </button>
+                    </div>
+
+                    <!-- COMMENT SECTION -->
+                    <div id="comments-${post.id}" class="hidden p-4 bg-slate-50 border-t">
+                        <div class="flex gap-2 mb-4">
+                            <img src="https://i.pravatar.cc/150?u=me" class="w-8 h-8 rounded-full">
+                            <input id="input-comment-${post.id}" type="text" onkeypress="if(event.key==='Enter')addComment(${post.id})" placeholder="Write a comment..." class="flex-1 text-xs border rounded-full px-4 py-2 outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <div class="space-y-3">
+                            ${post.comments.map(c => `
+                                <div class="flex gap-2">
+                                    <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold">${c.user.charAt(0)}</div>
+                                    <div class="bg-white p-2 rounded-xl text-[11px] shadow-sm flex-1">
+                                        <p class="font-bold">${c.user}</p>
+                                        <p class="text-slate-600">${c.text}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderJobs() {
+            const list = document.getElementById('jobs-list');
+            list.innerHTML = state.jobs.map(job => `
+                <div class="flex items-center gap-4 p-4 hover:bg-slate-50 border rounded-xl transition-colors cursor-pointer group">
+                    <img src="${job.logo}" class="w-12 h-12 rounded object-contain bg-white border p-1">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm group-hover:text-indigo-600">${job.title}</h4>
+                        <p class="text-xs text-slate-500">${job.company} • ${job.location}</p>
+                        <p class="text-[10px] text-green-600 font-bold mt-1 flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3 h-3 fill-current"></i> Easy Apply
+                        </p>
+                    </div>
+                    <button onclick="applyJob(${job.id})" class="px-4 py-1 text-xs font-bold border-2 ${job.applied ? 'bg-indigo-600 text-white border-indigo-600' : 'border-indigo-600 text-indigo-600'} rounded-full hover:bg-indigo-50 transition-all">
+                        ${job.applied ? 'Applied' : 'Apply'}
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderNetwork() {
+            const grid = document.getElementById('network-grid');
+            grid.innerHTML = state.network.map(person => `
+                <div class="bg-white border rounded-xl p-4 flex flex-col items-center hover:shadow-md transition-shadow">
+                    <img src="${person.avatar}" class="w-16 h-16 rounded-full mb-3 object-cover shadow-sm">
+                    <h3 class="font-bold text-sm">${person.name}</h3>
+                    <p class="text-[10px] text-slate-500 mb-4 h-8 text-center px-2">${person.title}</p>
+                    <button onclick="addConnection(${person.id})" class="w-full py-1.5 border border-indigo-600 text-indigo-600 rounded-full text-xs font-bold hover:bg-indigo-50 transition-colors">Connect</button>
+                </div>
+            `).join('');
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notif-list');
+            const unread = state.notifications.filter(n => !n.read).length;
+            document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
+
+            list.innerHTML = state.notifications.map(n => `
+                <div class="p-4 flex items-center gap-3 hover:bg-slate-50 cursor-pointer ${!n.read ? 'bg-indigo-50/40 border-l-4 border-indigo-600' : ''}">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                        ${n.user.charAt(0)}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm"><strong>${n.user}</strong> ${n.action}</p>
+                        <p class="text-[10px] text-slate-400">${n.time}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMessages() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = state.messages.map(m => `
+                <div class="p-3 flex items-center gap-3 hover:bg-slate-50 cursor-pointer">
+                    <div class="relative">
+                        <img src="${m.avatar}" class="w-8 h-8 rounded-full border">
+                        <span class="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></span>
+                    </div>
+                    <div class="flex-1 truncate">
+                        <p class="text-xs font-bold">${m.user}</p>
+                        <p class="text-[10px] text-slate-500 truncate">${m.text}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTrends() {
+            const container = document.getElementById('trends');
+            container.innerHTML = state.trends.map(tag => `
+                <div class="cursor-pointer group flex justify-between items-center">
+                    <p class="text-sm font-bold group-hover:text-indigo-600">${tag}</p>
+                    <i data-lucide="chevron-right" class="w-3 h-3 text-slate-300 group-hover:text-indigo-600"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- ACTIONS & FUNCTIONS ---
+
+        function switchTab(viewId) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById(`tab-${viewId}`).classList.add('active-tab');
+            if(viewId === 'notifications') {
+                state.notifications.forEach(n => n.read = true);
+                renderNotifications();
+            }
+        }
+
+        function handleLike(id) {
+            const post = state.posts.find(p => p.id === id);
+            post.liked = !post.liked;
+            post.likes += post.liked ? 1 : -1;
+            renderFeed();
+            if(post.liked) pushNotification(post.author, "liked your post");
+        }
+
+        function toggleCommentSection(id) {
+            const el = document.getElementById(`comments-${id}`);
+            el.classList.toggle('hidden');
+        }
+
+        function addComment(id) {
+            const input = document.getElementById(`input-comment-${id}`);
+            if(!input.value.trim()) return;
+            const post = state.posts.find(p => p.id === id);
+            post.comments.push({user: "Alex", text: input.value});
+            input.value = '';
+            renderFeed();
+            document.getElementById(`comments-${id}`).classList.remove('hidden');
+            pushNotification("System", "Comment added successfully");
+        }
+
+        function toggleSave(id) {
+            const post = state.posts.find(p => p.id === id);
+            post.saved = !post.saved;
+            state.currentUser.savedItems += post.saved ? 1 : -1;
+            document.getElementById('stat-saved').innerText = state.currentUser.savedItems;
+            renderFeed();
+            toast(post.saved ? "Saved to your items" : "Removed from saved");
+        }
+
+        function applyJob(id) {
+            const job = state.jobs.find(j => j.id === id);
+            job.applied = !job.applied;
+            renderJobs();
+            toast(job.applied ? `Applied to ${job.company}` : "Application withdrawn");
+        }
+
+        function attachRandomImage() {
+            state.attachedImage = `https://picsum.photos/seed/${Math.random()}/800/600`;
+            document.getElementById('attachedImg').src = state.attachedImage;
+            document.getElementById('postPreview').classList.remove('hidden');
+        }
+
+        function removeImage() {
+            state.attachedImage = null;
+            document.getElementById('postPreview').classList.add('hidden');
+        }
+
+        function publishPost() {
+            const input = document.getElementById('postInput');
+            if(!input.value.trim() && !state.attachedImage) return;
+
+            state.posts.unshift({
+                id: Date.now(),
+                author: "Alex Johnson",
+                avatar: "https://i.pravatar.cc/150?u=me",
+                content: input.value,
+                image: state.attachedImage,
+                likes: 0, liked: false, comments: [], saved: false, time: "Just now"
+            });
+
+            input.value = '';
+            input.rows = 1;
+            removeImage();
+            document.getElementById('postActions').classList.add('hidden');
+            renderFeed();
+            toast("Update shared", "success");
+        }
+
+        function toggleProfileEdit() {
+            document.getElementById('modal-profile').classList.toggle('hidden');
+        }
+
+        function saveProfile() {
+            const headline = document.getElementById('edit-headline').value;
+            state.currentUser.headline = headline;
+            document.getElementById('profile-headline').innerText = headline;
+            toggleProfileEdit();
+            toast("Profile updated");
+        }
+
+        function pushNotification(user, action) {
+            state.notifications.unshift({ id: Date.now(), user, action, time: "Just now", read: false });
+            renderNotifications();
+        }
+
+        function clearNotifications() {
+            state.notifications = [];
+            renderNotifications();
+            toast("Notifications cleared");
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            toast("Theme toggled");
+        }
+
+        function addConnection(id) {
+            state.network = state.network.filter(p => p.id !== id);
+            state.currentUser.connections++;
+            document.getElementById('stat-connections').innerText = state.currentUser.connections;
+            renderNetwork();
+            toast("Invitation sent");
+        }
+
+        function filterPosts() {
+            const query = document.getElementById('searchInput').value;
+            renderFeed(query);
+        }
+
+        function toast(msg, type = 'info') {
+            const container = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-msg px-4 py-2 bg-slate-900 text-white text-[11px] font-bold rounded-full shadow-2xl mb-2 border border-white/10 flex items-center gap-2`;
+            const icon = type === 'success' ? '<i data-lucide="check" class="w-3 h-3 text-green-400"></i>' : '';
+            el.innerHTML = `${icon} ${msg}`;
+            container.appendChild(el);
+            lucide.createIcons();
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            }, 3000);
+        }
+
+        // --- EVENTS ---
+
+        const postArea = document.getElementById('postInput');
+        postArea.addEventListener('focus', () => {
+            postArea.rows = 3;
+            document.getElementById('postActions').classList.remove('hidden');
+            document.getElementById('postActions').classList.add('flex');
+        });
+
+        // Close modal on outside click
+        document.getElementById('modal-profile').addEventListener('click', (e) => {
+            if(e.target === document.getElementById('modal-profile')) toggleProfileEdit();
+        });
+
+        window.onload = renderAll;
+    </script>
+</body>
+</html>
